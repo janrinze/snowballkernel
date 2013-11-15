@@ -44,7 +44,7 @@ static unsigned long arthur_to_linux_signals[32] = {
 };
 
 static unsigned long linux_to_arthur_signals[32] = {
-	0,		-1,		ARTHUR_SIGINT,	-1,
+	32,		-1,		ARTHUR_SIGINT,	-1,
        	ARTHUR_SIGILL,	5,		ARTHUR_SIGABRT,	7,
 	ARTHUR_SIGFPE,	9,		ARTHUR_SIGUSR1,	ARTHUR_SIGSEGV,	
 	ARTHUR_SIGUSR2,	13,		14,		ARTHUR_SIGTERM,
@@ -54,18 +54,23 @@ static unsigned long linux_to_arthur_signals[32] = {
 	28,		29,		30,		31
 };
 
-static void arthur_lcall7(int nr, struct pt_regs *regs)
+static unsigned int arthur_lcall7(int nr, struct pt_regs *regs)
 {
-	struct siginfo info;
-	info.si_signo = SIGSWI;
-	info.si_errno = nr;
+	siginfo_t info;
+    memset(&info, 0, sizeof(info));
+	info.si_signo = SIGILL;
+	info.si_errno = 0;
+	info.si_code = 0;
+    info.si_addr = (void __user *)(instruction_pointer(regs) - 4);
 	/* Bounce it to the emulator */
-	send_sig_info(SIGSWI, &info, current);
+        /* newer kernels cause sigswi to lose info */
+	send_sig_info(SIGILL, &info, current);
+    return regs->ARM_r0;   
 }
 
 static struct exec_domain arthur_exec_domain = {
 	.name		= "Arthur",
-	.handler	= arthur_lcall7,
+	.handler	= ( void (*)(int, struct pt_regs *))arthur_lcall7,
 	.pers_low	= PER_RISCOS,
 	.pers_high	= PER_RISCOS,
 	.signal_map	= arthur_to_linux_signals,

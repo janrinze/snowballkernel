@@ -2248,7 +2248,7 @@ source "fs/Kconfig.binfmt"
 
 config ARTHUR
 	tristate "RISC OS personality"
-	depends on !AEABI
+	depends on AEABI
 	help
 	  Say Y here to include the kernel code necessary if you want to run
 	  Acorn RISC OS/Arthur binaries under Linux. This code is still very

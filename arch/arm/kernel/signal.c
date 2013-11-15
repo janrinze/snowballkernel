@@ -343,6 +343,17 @@ asmlinkage int sys_sigreturn(struct pt_regs *regs)
 	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
 		goto badframe;
 
+#if defined(CONFIG_ARTHUR)
+    /*
+     * Arthur handles SWI in RISC OS mode.
+     * Before the entering the RISC OS SWI handler a flag gets set
+     * to allow the handler to use Linux syscalls.
+     * Here we restore the flag bask to RISC OS mode.
+     */ 
+	if ((current_thread_info()->task->personality & 0x1ff) == 0x10c)
+			current_thread_info()->task->personality &= ~0x100;
+#endif
+
 	if (restore_sigframe(regs, frame))
 		goto badframe;
 
@@ -372,6 +383,17 @@ asmlinkage int sys_rt_sigreturn(struct pt_regs *regs)
 
 	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
 		goto badframe;
+
+#if defined(CONFIG_ARTHUR)
+    /*
+     * Arthur handles SWI in RISC OS mode.
+     * Before the entering the RISC OS SWI handler a flag gets set
+     * to allow the handler to use Linux syscalls.
+     * Here we restore the flag bask to RISC OS mode.
+     */ 
+	if ((current_thread_info()->task->personality & 0x1ff) == 0x10c)
+			current_thread_info()->task->personality &= ~0x100;
+#endif
 
 	if (restore_sigframe(regs, &frame->sig))
 		goto badframe;

@@ -324,6 +324,19 @@ ENDPROC(ftrace_stub)
 
 #endif /* CONFIG_FUNCTION_TRACER */
 
+#ifdef CONFIG_ARTHUR
+Arthur_Handle_SWI:
+	orr	ip,ip,#0x100				@ set in SWI running flag
+	str	ip,[tbl, #TSK_PERSONALITY]	@
+	ldr ip,[tsk,#TI_EXEC_DOMAIN]	@ get domain
+	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
+	add	r1, sp, #S_OFF				@ get pointer to register set
+	mov scno,#32					@ set SIGSWI as info for the rest of the kernel
+	adr	lr, BSYM(ret_fast_syscall)	@ set return address
+	ldr pc,[ip,#EXD_HANDLER]		@ jump to Arthur handler
+	mov r0,r0						@ NOP
+#endif
+
 /*=============================================================================
  * SWI handler
  *-----------------------------------------------------------------------------
@@ -351,7 +364,7 @@ ENTRY(vector_swi)
  ARM(	stmdb	r8, {sp, lr}^		)	@ Calling sp, lr
  THUMB(	mov	r8, sp			)
  THUMB(	store_user_sp_lr r8, r10, S_SP	)	@ calling sp, lr
-	mrs	r8, spsr			@ called from non-FIQ mode, so ok.
+	mrs	r8, spsr				@ called from non-FIQ mode, so ok.
 	str	lr, [sp, #S_PC]			@ Save calling PC
 	str	r8, [sp, #S_PSR]		@ Save CPSR
 	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
@@ -416,6 +429,18 @@ ENTRY(vector_swi)
 	enable_irq
 
 	get_thread_info tsk
+	
+#ifdef CONFIG_ARTHUR
+
+	ldr	tbl,[tsk, #TI_TASK]		@ get pointer to task_struct
+	ldr	ip,[tbl, #TSK_PERSONALITY]	@ get personality
+	mov ip,ip,lsl #23			@  // and ip,ip,#0x1ff can't be done directly..
+	mov ip,ip,lsr #23			@
+	cmp	ip,#0xc  				@ PER_RISCOS # check if we are in RISCOS mode (check will fail if SWI running flag is set.)
+	beq Arthur_Handle_SWI		@ pass on
+
+#endif
+
 	adr	tbl, sys_call_table		@ load syscall table pointer
 
 #if defined(CONFIG_OABI_COMPAT)
