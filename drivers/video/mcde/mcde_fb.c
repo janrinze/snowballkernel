@@ -704,7 +704,7 @@ static struct fb_ops fb_ops = {
 	.fb_rotate      = mcde_fb_rotate,
 	.fb_ioctl       = mcde_fb_ioctl,
 	.fb_setcolreg   = mcde_fb_setcolreg,
-	.fb_setcmap     = mcde_fb_setcmap,
+	//.fb_setcmap     = mcde_fb_setcmap,
 };
 
 /* FB driver */
