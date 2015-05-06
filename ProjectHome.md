@@ -1,0 +1,2 @@
+This is a copy of kernel 3.3.0 for the Snowball board.
+Igloo community has gone now and hardware support in newer kernels is not doing well. To keep a copy around this repository is started. Hopefully to get things ported to the latest kernels.
